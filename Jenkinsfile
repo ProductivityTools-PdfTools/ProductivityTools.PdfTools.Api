@@ -46,13 +46,9 @@ pipeline {
             steps {
                 script {
                     echo "build"
-                    sh 'java -version'
                     sh 'echo $JAVA_HOME'
                     sh 'chmod +x gradlew'
-                    sh './gradlew --stop'
-                    sh './gradlew --version'
-                    sh './gradlew --stop'
-                    sh 'java -version; ./gradlew clean build --rerun-tasks'
+                    sh './gradlew clean build --rerun-tasks --no-daemon'
                 }
             }
         }
