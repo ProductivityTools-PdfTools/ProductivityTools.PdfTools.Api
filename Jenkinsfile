@@ -57,7 +57,7 @@ pipeline {
             steps {
                 script {
                     echo "Stopping application"
-                    sh 'sudo systemctl stop pdftools'
+                    sh 'sudo systemctl stop pdftools || echo "Service not running, skipping stop"'
                 }
             }
         }
