@@ -68,7 +68,7 @@ pipeline {
                     echo "Copying JAR to /opt/PT.PdfTools"
                     sh '''
                         umask 002
-                        JAR=build/libs/pdf.api-0.0.1-SNAPSHOT.jar
+                        JAR=build/libs/Application-0.0.1-SNAPSHOT.jar
                         if [ ! -f "$JAR" ]; then
                           echo "Jar not found at $JAR"; exit 1
                         fi
