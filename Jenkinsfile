@@ -1,0 +1,95 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Hello') {
+            steps {
+                // Get some code from a GitHub repository
+                echo 'Hello!'
+            }
+        }
+
+        stage('Identify User') {
+            steps {
+                script {
+                    echo "Sprawdzanie, jako który użytkownik Jenkins wykonuje komendy..."
+
+                    // Komenda whoami
+                    echo "Nazwa użytkownika (whoami):"
+                    sh 'whoami'
+
+                    // Komenda id (bardziej szczegółowa)
+                    echo "Szczegóły użytkownika (id):"
+                    sh 'id'
+
+                    echo "Zakończono identyfikację użytkownika."
+                }
+            }
+        }
+
+        stage('deleteWorkspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
+         stage('clone') {
+            steps {
+                // Get some code from a GitHub repository
+                git branch: 'main',
+                url: 'https://github.com/ProductivityTools-PdfTools/ProductivityTools.PdfTools.Api.git'
+            }
+        }
+        
+
+        stage('build') {
+            steps {
+                script {
+                    echo "build"
+                    sh 'java -version'
+                    sh 'echo $JAVA_HOME'
+                    sh 'chmod +x gradlew'
+                    sh './gradlew --stop'
+                    sh './gradlew --version'
+                    sh './gradlew --stop'
+                    sh 'java -version; ./gradlew clean build --rerun-tasks'
+                }
+            }
+        }
+
+        stage('stop application') {
+            steps {
+                script {
+                    echo "Stopping application"
+                    sh 'sudo systemctl stop pdftools'
+                }
+            }
+        }
+
+        stage('Copy Jar to /opt/PT.PdfTools') {
+            steps {
+                script {
+                    echo "Copying JAR to /opt/PT.PdfTools"
+                    sh '''
+                        umask 002
+                        JAR=build/libs/pdf.api-0.0.1-SNAPSHOT.jar
+                        if [ ! -f "$JAR" ]; then
+                          echo "Jar not found at $JAR"; exit 1
+                        fi
+                        mkdir -p /opt/PT.PdfTools
+                        cp "$JAR" /opt/PT.PdfTools/
+                    '''
+                }
+            }
+        }
+        
+        stage('start application') {
+            steps {
+                script {
+                    echo "Starting application"
+                    sh 'sudo systemctl start pdftools'
+                }
+            }
+        }
+    }
+}
