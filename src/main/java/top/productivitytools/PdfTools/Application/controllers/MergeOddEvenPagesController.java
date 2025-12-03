@@ -1,4 +1,4 @@
-package top.productivitytools.PdfTools.Application.controllers;
+package top.productivitytools.PdfTools.api.controllers;
 
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;

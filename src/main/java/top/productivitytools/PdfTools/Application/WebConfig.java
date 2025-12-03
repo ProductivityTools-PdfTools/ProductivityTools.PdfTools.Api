@@ -1,4 +1,4 @@
-package top.productivitytools.PdfTools.Application;
+package top.productivitytools.PdfTools.api;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
