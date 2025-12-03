@@ -79,6 +79,17 @@ pipeline {
             }
         }
         
+        stage('Deploy Service File') {
+            steps {
+                script {
+                     echo "Deploying service file"
+                     sh 'sudo cp deploy/pdftools.service /etc/systemd/system/pdftools.service'
+                     sh 'sudo systemctl daemon-reload'
+                     sh 'sudo systemctl enable pdftools'
+                }
+            }
+        }
+
         stage('start application') {
             steps {
                 script {

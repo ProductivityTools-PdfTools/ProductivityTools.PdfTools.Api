@@ -1,11 +1,18 @@
 [Unit]
 Description=PdfTools Service
-After=syslog.target
+After=network.target
 
 [Service]
-User=jenkins
-ExecStart=/usr/bin/java -jar /opt/PT.PdfTools/pdftools-0.0.1-SNAPSHOT.jar
+Type=simple
+User=springuser
+Group=springuser
+WorkingDirectory=/opt/PT.PdfTools
+EnvironmentFile=/etc/default/pdftools
+ExecStart=/usr/bin/java -jar /opt/PT.PdfTools/pdftools-0.0.1-SNAPSHOT.jar --server.port=${SERVER_PORT} --spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
+Restart=on-failure
+RestartSec=5
 SuccessExitStatus=143
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
