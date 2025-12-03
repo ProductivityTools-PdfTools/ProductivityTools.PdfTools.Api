@@ -83,7 +83,7 @@ pipeline {
             steps {
                 script {
                     echo "Starting application"
-                    sh 'sudo systemctl start pdftools'
+                    sh 'sudo systemctl start Application'
                 }
             }
         }
