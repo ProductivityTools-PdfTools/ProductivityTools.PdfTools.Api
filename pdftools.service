@@ -1,0 +1,11 @@
+[Unit]
+Description=PdfTools Service
+After=syslog.target
+
+[Service]
+User=jenkins
+ExecStart=/usr/bin/java -jar /opt/PT.PdfTools/pdftools-0.0.1-SNAPSHOT.jar
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

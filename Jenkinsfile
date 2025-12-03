@@ -68,7 +68,7 @@ pipeline {
                     echo "Copying JAR to /opt/PT.PdfTools"
                     sh '''
                         umask 002
-                        JAR=build/libs/Application-0.0.1-SNAPSHOT.jar
+                        JAR=build/libs/pdftools-0.0.1-SNAPSHOT.jar
                         if [ ! -f "$JAR" ]; then
                           echo "Jar not found at $JAR"; exit 1
                         fi
@@ -83,7 +83,7 @@ pipeline {
             steps {
                 script {
                     echo "Starting application"
-                    sh 'sudo systemctl start Application'
+                    sh 'sudo systemctl start pdftools'
                 }
             }
         }
