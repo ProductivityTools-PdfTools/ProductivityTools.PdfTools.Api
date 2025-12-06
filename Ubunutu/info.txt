@@ -1,0 +1,9 @@
+at first I planned to deploy it on ubuntu, I changed to the Cloud run
+
+
+{
+    "RR": "pdftools-api",
+    "Type": "CNAME",
+    "Target": "kameralne.productivitytools.top",
+    "MapToExternal": "False"
+},

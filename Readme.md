@@ -11,3 +11,14 @@ jenkins ALL=(ALL) NOPASSWD: /usr/bin/cp /var/lib/jenkins/workspace/PT.PDFTools/d
 jenkins ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
 jenkins ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable pdftools
 ```
+
+Env variables
+
+```
+sudo touch /etc/default/pdftools
+sudo nano /etc/default/pdftools
+```
+
+```
+SERVER_PORT=8080
+```

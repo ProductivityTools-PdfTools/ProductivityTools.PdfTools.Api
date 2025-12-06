@@ -1,0 +1,10 @@
+ server {
+        listen 80;
+        listen [::]:80;
+
+        server_name pdftools-api.productivitytools.top;
+
+        location / {
+                proxy_pass http://192.168.0.41:8083;
+        }
+}
