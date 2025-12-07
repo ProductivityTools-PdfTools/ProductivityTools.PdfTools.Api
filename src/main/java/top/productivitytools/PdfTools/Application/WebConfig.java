@@ -17,7 +17,7 @@ public class WebConfig {
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowedOrigins("http://localhost:4200", "https://ptprojectsweb.web.app",
-                                "https://pt-habits.web.app", "https://pdftools-api.productivitytools.top")
+                                "https://pt-pdf-tools.web.app")
                         .allowCredentials(true)
                         .exposedHeaders("Authorization");
             }
