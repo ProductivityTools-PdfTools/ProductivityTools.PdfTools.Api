@@ -9,11 +9,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
 
 import lombok.RequiredArgsConstructor;
+import java.io.IOException;
 
 @Controller
 @RequiredArgsConstructor
@@ -31,8 +30,8 @@ public class MergeOddEvenPagesController {
     }
 
     @PostMapping(value = "/mergeOddEvenPages", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Resource> mergeOddEvenPages(@RequestParam("file1") MultipartFile file1,
-            @RequestParam("file2") MultipartFile file2) throws IOException {
+    public ResponseEntity<Resource> mergeOddEvenPages(@Argument("file1") MultipartFile file1,
+            @Argument("file2") MultipartFile file2) throws IOException {
 
         byte[] zipBytes = file1.getBytes();
 
