@@ -1,5 +1,8 @@
+scalar Upload
+
 type Mutation{
     Hello(name: String!):String
+    MergeFiles(file1: Upload!, file2: Upload!): String
 }
 
 type Query {
