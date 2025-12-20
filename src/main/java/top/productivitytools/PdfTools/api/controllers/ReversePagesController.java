@@ -20,7 +20,7 @@ import java.io.IOException;
 @RequestMapping("/api")
 public class ReversePagesController {
 
-    @PostMapping("/reverse-pages")
+    @PostMapping("/reverse-pages-in-file")
     public ResponseEntity<Resource> reversePages(
             @RequestParam("file") MultipartFile file) throws IOException {
 
