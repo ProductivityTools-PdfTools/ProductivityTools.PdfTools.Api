@@ -1,23 +1,24 @@
 package top.productivitytools.PdfTools.api.controllers;
 
-import org.springframework.graphql.data.method.annotation.Argument;
-import org.springframework.graphql.data.method.annotation.MutationMapping;
-import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import lombok.RequiredArgsConstructor;
-
-@Controller
-@RequiredArgsConstructor
+@RestController
+@RequestMapping("/api")
 public class HomeController {
-    @QueryMapping
-    public String helloQuery() {
-        return "Hello World";
+    @GetMapping("/hello-world")
+    public HelloResponse helloQuery() {
+        return new HelloResponse("Hello World");
     }
 
-    @MutationMapping
-    public String Hello(@Argument("name") String name) {
-        var response = "Hello " + name;
-        return response;
+    @PostMapping("/hello")
+    public HelloResponse Hello(@RequestBody HelloRequest request) {
+        return new HelloResponse("Hello " + request.name());
     }
+
+    public record HelloRequest(String name) {}
+    public record HelloResponse(String message) {}
 }

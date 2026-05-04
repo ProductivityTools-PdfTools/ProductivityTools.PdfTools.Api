@@ -1,7 +1,0 @@
-type Mutation{
-    Hello(name: String!):String
-}
-
-type Query {
-    helloQuery: String
-}

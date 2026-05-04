@@ -51,12 +51,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     response.setContentType("application/json");
                     return;
                 }
-            } else {
-                log.warn("No bearer token found for request: {}", request.getRequestURI());
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("{\"error\": \"Unauthorized - Bearer token required\"}");
-                response.setContentType("application/json");
-                return;
             }
         } catch (Exception e) {
             log.error("Error processing authentication: {}", e.getMessage(), e);

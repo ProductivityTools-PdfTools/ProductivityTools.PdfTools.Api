@@ -1,3 +1,11 @@
+
+## Development
+
+```
+$env:JAVA_HOME="c:\Program Files\Java\jdk-24\"
+.\gradlew.bat bootrun
+```
+
 ## Jenkins
 
 Enable jenkins to run commands without sudo
