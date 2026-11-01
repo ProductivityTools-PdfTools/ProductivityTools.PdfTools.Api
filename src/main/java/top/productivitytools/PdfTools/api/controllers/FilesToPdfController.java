@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import top.productivitytools.PdfTools.api.pdf.FileNames;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -22,9 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
@@ -80,7 +79,7 @@ public class FilesToPdfController {
                  ZipOutputStream zos = new ZipOutputStream(baos, StandardCharsets.UTF_8)) {
                 List<String> failed = new ArrayList<>();
                 for (Path input : inputs) {
-                    String pdfName = baseName(input.getFileName().toString()) + ".pdf";
+                    String pdfName = FileNames.baseName(input.getFileName().toString()) + ".pdf";
                     Path pdf = outputDir.resolve(pdfName);
                     if (!Files.isRegularFile(pdf) || Files.size(pdf) == 0) {
                         failed.add(input.getFileName().toString());
@@ -109,23 +108,17 @@ public class FilesToPdfController {
      */
     private List<Path> saveInputs(List<MultipartFile> files, Path inputDir) throws IOException {
         List<Path> inputs = new ArrayList<>();
-        Set<String> usedBaseNames = new HashSet<>();
+        FileNames.Unique uniqueNames = new FileNames.Unique();
 
         for (MultipartFile file : files) {
-            String name = sanitize(file.getOriginalFilename());
-            String extension = extension(name);
+            String name = FileNames.sanitize(file.getOriginalFilename());
+            String extension = FileNames.extension(name);
             if (!SUPPORTED_EXTENSIONS.contains(extension)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Unsupported file: " + name + " (supported: .doc, .docx)");
             }
 
-            String base = baseName(name);
-            String uniqueBase = base;
-            for (int i = 2; !usedBaseNames.add(uniqueBase.toLowerCase(Locale.ROOT)); i++) {
-                uniqueBase = base + " (" + i + ")";
-            }
-
-            Path target = inputDir.resolve(uniqueBase + "." + extension);
+            Path target = inputDir.resolve(uniqueNames.next(FileNames.baseName(name)) + "." + extension);
             file.transferTo(target);
             inputs.add(target);
         }
@@ -163,23 +156,5 @@ public class FilesToPdfController {
         if (process.exitValue() != 0) {
             log.warn("LibreOffice exited with code {}: {}", process.exitValue(), Files.readString(logFile));
         }
-    }
-
-    private static String sanitize(String originalName) {
-        String name = originalName == null ? "" : originalName;
-        // Drop any directory part sent by the browser and characters that are unsafe in file names.
-        name = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
-        name = name.replaceAll("[\\p{Cntrl}:*?\"<>|]", "_").trim();
-        return name.isEmpty() || name.startsWith(".") ? "document" + name : name;
-    }
-
-    private static String extension(String name) {
-        int dot = name.lastIndexOf('.');
-        return dot >= 0 ? name.substring(dot + 1).toLowerCase(Locale.ROOT) : "";
-    }
-
-    private static String baseName(String name) {
-        int dot = name.lastIndexOf('.');
-        return dot > 0 ? name.substring(0, dot) : name;
     }
 }
