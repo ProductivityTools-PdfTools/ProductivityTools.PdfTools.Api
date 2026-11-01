@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +26,7 @@ import java.util.zip.ZipInputStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -80,12 +82,23 @@ class FilesToPdfControllerTest {
     }
 
     @Test
-    void stripsDirectoriesFromFileNames() throws Exception {
-        MvcResult result = mockMvc.perform(multipart("/api/files-to-pdf").file(word("../../evil.docx")))
+    void returnsPlainPdfForSingleFile() throws Exception {
+        MvcResult result = mockMvc.perform(multipart("/api/files-to-pdf").file(word("Raport Q3.docx")))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                // The name is RFC 5987 encoded (filename*=UTF-8''Raport%20Q3.pdf).
+                .andExpect(header().string("Content-Disposition", containsString("Q3.pdf")))
                 .andReturn();
 
-        assertThat(zipEntries(result.getResponse().getContentAsByteArray())).containsExactly("evil.pdf");
+        assertThat(result.getResponse().getContentAsByteArray()).startsWith("%PDF".getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void stripsDirectoriesFromFileNames() throws Exception {
+        mockMvc.perform(multipart("/api/files-to-pdf").file(word("../../evil.docx")).file(word("other.docx")))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(zipEntries(result.getResponse().getContentAsByteArray()))
+                        .containsExactly("evil.pdf", "other.pdf"));
     }
 
     @Test

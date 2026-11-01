@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,7 +32,8 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * Converts Word documents (.doc, .docx) to PDF using LibreOffice in headless
- * mode and returns all PDFs in a single ZIP file. Each PDF has the same name
+ * mode and returns all PDFs in a single ZIP file (or just the PDF when a single
+ * document is sent). Each PDF has the same name
  * as the source document (report.docx -> report.pdf).
  *
  * Requires LibreOffice (the "soffice" binary) to be installed on the server.
@@ -49,6 +51,10 @@ public class FilesToPdfController {
     @Value("${pdftools.conversion-timeout-seconds:180}")
     private long timeoutSeconds;
 
+    /**
+     * Returns a single PDF (e.g. "report.pdf") when one document was sent, or a
+     * ZIP with all PDFs ("converted.zip") when several documents were sent.
+     */
     @PostMapping("/files-to-pdf")
     public ResponseEntity<Resource> filesToPdf(@RequestParam("files") List<MultipartFile> files)
             throws IOException, InterruptedException {
@@ -56,17 +62,20 @@ public class FilesToPdfController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No files provided");
         }
 
-        byte[] zipData = convertToZip(files);
-        ByteArrayResource resource = new ByteArrayResource(zipData);
+        ConversionResult result = convert(files);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"converted.zip\"")
-                .contentType(MediaType.parseMediaType("application/zip"))
-                .contentLength(zipData.length)
-                .body(resource);
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(result.fileName(), StandardCharsets.UTF_8).build().toString())
+                .contentType(result.contentType())
+                .contentLength(result.data().length)
+                .body(new ByteArrayResource(result.data()));
     }
 
-    private byte[] convertToZip(List<MultipartFile> files) throws IOException, InterruptedException {
+    private record ConversionResult(byte[] data, String fileName, MediaType contentType) {
+    }
+
+    private ConversionResult convert(List<MultipartFile> files) throws IOException, InterruptedException {
         Path workDir = Files.createTempDirectory("files-to-pdf-");
         try {
             Path inputDir = Files.createDirectory(workDir.resolve("in"));
@@ -75,26 +84,37 @@ public class FilesToPdfController {
             List<Path> inputs = saveInputs(files, inputDir);
             runLibreOffice(inputs, outputDir, workDir.resolve("profile"));
 
+            List<Path> pdfs = new ArrayList<>();
+            List<String> failed = new ArrayList<>();
+            for (Path input : inputs) {
+                Path pdf = outputDir.resolve(FileNames.baseName(input.getFileName().toString()) + ".pdf");
+                if (Files.isRegularFile(pdf) && Files.size(pdf) > 0) {
+                    pdfs.add(pdf);
+                } else {
+                    failed.add(input.getFileName().toString());
+                }
+            }
+            if (!failed.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Could not convert: " + String.join(", ", failed));
+            }
+
+            if (pdfs.size() == 1) {
+                Path pdf = pdfs.get(0);
+                return new ConversionResult(Files.readAllBytes(pdf), pdf.getFileName().toString(),
+                        MediaType.APPLICATION_PDF);
+            }
+
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                  ZipOutputStream zos = new ZipOutputStream(baos, StandardCharsets.UTF_8)) {
-                List<String> failed = new ArrayList<>();
-                for (Path input : inputs) {
-                    String pdfName = FileNames.baseName(input.getFileName().toString()) + ".pdf";
-                    Path pdf = outputDir.resolve(pdfName);
-                    if (!Files.isRegularFile(pdf) || Files.size(pdf) == 0) {
-                        failed.add(input.getFileName().toString());
-                        continue;
-                    }
-                    zos.putNextEntry(new ZipEntry(pdfName));
+                for (Path pdf : pdfs) {
+                    zos.putNextEntry(new ZipEntry(pdf.getFileName().toString()));
                     Files.copy(pdf, zos);
                     zos.closeEntry();
                 }
-                if (!failed.isEmpty()) {
-                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                            "Could not convert: " + String.join(", ", failed));
-                }
                 zos.finish();
-                return baos.toByteArray();
+                return new ConversionResult(baos.toByteArray(), "converted.zip",
+                        MediaType.parseMediaType("application/zip"));
             }
         } finally {
             FileSystemUtils.deleteRecursively(workDir);
