@@ -31,10 +31,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Converts Word documents (.doc, .docx) to PDF using LibreOffice in headless
- * mode and returns all PDFs in a single ZIP file (or just the PDF when a single
- * document is sent). Each PDF has the same name
- * as the source document (report.docx -> report.pdf).
+ * Converts Word (.doc, .docx) and Excel (.xls, .xlsx) files to PDF using
+ * LibreOffice in headless mode and returns all PDFs in a single ZIP file
+ * (or just the PDF when a single file is sent). Each PDF has the same name
+ * as the source file (report.docx -> report.pdf, budget.xlsx -> budget.pdf).
  *
  * Requires LibreOffice (the "soffice" binary) to be installed on the server.
  */
@@ -43,7 +43,7 @@ import java.util.zip.ZipOutputStream;
 @RequestMapping("/api")
 public class FilesToPdfController {
 
-    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("doc", "docx");
+    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("doc", "docx", "xls", "xlsx");
 
     @Value("${pdftools.soffice-path:soffice}")
     private String sofficePath;
@@ -135,7 +135,7 @@ public class FilesToPdfController {
             String extension = FileNames.extension(name);
             if (!SUPPORTED_EXTENSIONS.contains(extension)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Unsupported file: " + name + " (supported: .doc, .docx)");
+                        "Unsupported file: " + name + " (supported: .doc, .docx, .xls, .xlsx)");
             }
 
             Path target = inputDir.resolve(uniqueNames.next(FileNames.baseName(name)) + "." + extension);

@@ -69,21 +69,23 @@ class FilesToPdfControllerTest {
     @Test
     void convertsAllFilesIntoZipKeepingNames() throws Exception {
         MvcResult result = mockMvc.perform(multipart("/api/files-to-pdf")
-                        .file(word("Raport Q3.docx"))
-                        .file(word("umowa.doc"))
-                        .file(word("umowa.docx")))
+                        .file(upload("Raport Q3.docx"))
+                        .file(upload("umowa.doc"))
+                        .file(upload("umowa.docx"))
+                        .file(upload("budzet.xls"))
+                        .file(upload("budzet.xlsx")))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("converted.zip")))
                 .andReturn();
 
-        // "umowa.doc" and "umowa.docx" would both become "umowa.pdf", so the second gets a suffix.
+        // Files sharing the same base name across extensions get a unique suffix.
         assertThat(zipEntries(result.getResponse().getContentAsByteArray()))
-                .containsExactly("Raport Q3.pdf", "umowa.pdf", "umowa (2).pdf");
+                .containsExactly("Raport Q3.pdf", "umowa.pdf", "umowa (2).pdf", "budzet.pdf", "budzet (2).pdf");
     }
 
     @Test
     void returnsPlainPdfForSingleFile() throws Exception {
-        MvcResult result = mockMvc.perform(multipart("/api/files-to-pdf").file(word("Raport Q3.docx")))
+        MvcResult result = mockMvc.perform(multipart("/api/files-to-pdf").file(upload("Raport Q3.docx")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 // The name is RFC 5987 encoded (filename*=UTF-8''Raport%20Q3.pdf).
@@ -94,8 +96,19 @@ class FilesToPdfControllerTest {
     }
 
     @Test
+    void returnsPlainPdfForSingleExcelFile() throws Exception {
+        MvcResult result = mockMvc.perform(multipart("/api/files-to-pdf").file(upload("Kosztorys 2026.xlsx")))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string("Content-Disposition", containsString("2026.pdf")))
+                .andReturn();
+
+        assertThat(result.getResponse().getContentAsByteArray()).startsWith("%PDF".getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
     void stripsDirectoriesFromFileNames() throws Exception {
-        mockMvc.perform(multipart("/api/files-to-pdf").file(word("../../evil.docx")).file(word("other.docx")))
+        mockMvc.perform(multipart("/api/files-to-pdf").file(upload("../../evil.docx")).file(upload("other.xls")))
                 .andExpect(status().isOk())
                 .andExpect(result -> assertThat(zipEntries(result.getResponse().getContentAsByteArray()))
                         .containsExactly("evil.pdf", "other.pdf"));
@@ -103,7 +116,7 @@ class FilesToPdfControllerTest {
 
     @Test
     void rejectsUnsupportedFiles() throws Exception {
-        mockMvc.perform(multipart("/api/files-to-pdf").file(word("notes.txt")))
+        mockMvc.perform(multipart("/api/files-to-pdf").file(upload("notes.txt")))
                 .andExpect(status().isBadRequest())
                 .andExpect(status().reason(containsString("notes.txt")));
     }
@@ -113,7 +126,7 @@ class FilesToPdfControllerTest {
         MockMultipartFile broken = new MockMultipartFile("files", "broken.docx", null,
                 "not a word file".getBytes(StandardCharsets.UTF_8));
 
-        mockMvc.perform(multipart("/api/files-to-pdf").file(word("ok.docx")).file(broken))
+        mockMvc.perform(multipart("/api/files-to-pdf").file(upload("ok.docx")).file(broken))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(status().reason(containsString("broken.docx")));
     }
@@ -122,7 +135,7 @@ class FilesToPdfControllerTest {
     void returns503WhenLibreOfficeIsMissing() throws Exception {
         ReflectionTestUtils.setField(controller, "sofficePath", tempDir.resolve("missing-soffice").toString());
 
-        mockMvc.perform(multipart("/api/files-to-pdf").file(word("a.docx")))
+        mockMvc.perform(multipart("/api/files-to-pdf").file(upload("a.docx")))
                 .andExpect(status().isServiceUnavailable());
     }
 
@@ -132,11 +145,11 @@ class FilesToPdfControllerTest {
         ReflectionTestUtils.setField(controller, "sofficePath", slow.toString());
         ReflectionTestUtils.setField(controller, "timeoutSeconds", 1L);
 
-        mockMvc.perform(multipart("/api/files-to-pdf").file(word("a.docx")))
+        mockMvc.perform(multipart("/api/files-to-pdf").file(upload("a.docx")))
                 .andExpect(status().isGatewayTimeout());
     }
 
-    private static MockMultipartFile word(String name) {
+    private static MockMultipartFile upload(String name) {
         return new MockMultipartFile("files", name, null, ("content of " + name).getBytes(StandardCharsets.UTF_8));
     }
 

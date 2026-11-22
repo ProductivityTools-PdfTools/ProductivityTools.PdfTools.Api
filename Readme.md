@@ -8,11 +8,11 @@ $env:JAVA_HOME="c:\Program Files\Java\jdk-24\"
 
 ## Jenkins
 
-Files to PDF (`/api/files-to-pdf`) converts .doc/.docx using LibreOffice, so it must be installed on the server
+Files to PDF (`/api/files-to-pdf`) converts .doc/.docx and .xls/.xlsx using LibreOffice, so it must be installed on the server
 (the Docker image installs it automatically):
 
 ```bash
-sudo apt install -y --no-install-recommends libreoffice-writer-nogui fonts-liberation fonts-dejavu-core
+sudo apt install -y --no-install-recommends libreoffice-writer-nogui libreoffice-calc-nogui fonts-liberation fonts-crosextra-carlito fonts-dejavu-core
 ```
 
 Enable jenkins to run commands without sudo
