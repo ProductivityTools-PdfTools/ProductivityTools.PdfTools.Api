@@ -41,7 +41,16 @@ class FilesToPdfControllerTest {
     private static final String FAKE_SOFFICE = """
             #!/bin/sh
             sleep "${FAKE_SLEEP:-0}"
-            while [ "$1" != "--outdir" ]; do shift; done
+            profile=""
+            while [ "$1" != "--outdir" ]; do
+              case "$1" in
+                -env:UserInstallation=file://*) profile="${1#-env:UserInstallation=file://}" ;;
+              esac
+              shift
+            done
+            if ! grep -q "DisableMacrosExecution" "$profile/user/registrymodifications.xcu"; then
+              echo "Macros not disabled in profile" >&2; exit 2
+            fi
             out="$2"; shift 2
             for f in "$@"; do
               if head -c 15 "$f" | grep -q "not a word file"; then
@@ -72,6 +81,7 @@ class FilesToPdfControllerTest {
                         .file(upload("Raport Q3.docx"))
                         .file(upload("umowa.doc"))
                         .file(upload("umowa.docx"))
+                        .file(upload("umowa.docm"))
                         .file(upload("budzet.xls"))
                         .file(upload("budzet.xlsx")))
                 .andExpect(status().isOk())
@@ -80,7 +90,18 @@ class FilesToPdfControllerTest {
 
         // Files sharing the same base name across extensions get a unique suffix.
         assertThat(zipEntries(result.getResponse().getContentAsByteArray()))
-                .containsExactly("Raport Q3.pdf", "umowa.pdf", "umowa (2).pdf", "budzet.pdf", "budzet (2).pdf");
+                .containsExactly("Raport Q3.pdf", "umowa.pdf", "umowa (2).pdf", "umowa (3).pdf", "budzet.pdf", "budzet (2).pdf");
+    }
+
+    @Test
+    void returnsPlainPdfForSingleMacroEnabledWordFile() throws Exception {
+        MvcResult result = mockMvc.perform(multipart("/api/files-to-pdf").file(upload("Formularz z makrem.docm")))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string("Content-Disposition", containsString("makrem.pdf")))
+                .andReturn();
+
+        assertThat(result.getResponse().getContentAsByteArray()).startsWith("%PDF".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test

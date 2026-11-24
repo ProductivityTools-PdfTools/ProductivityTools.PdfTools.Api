@@ -31,10 +31,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Converts Word (.doc, .docx) and Excel (.xls, .xlsx) files to PDF using
+ * Converts Word (.doc, .docx, .docm) and Excel (.xls, .xlsx) files to PDF using
  * LibreOffice in headless mode and returns all PDFs in a single ZIP file
- * (or just the PDF when a single file is sent). Each PDF has the same name
- * as the source file (report.docx -> report.pdf, budget.xlsx -> budget.pdf).
+ * (or just the PDF when a single file is sent). Macros are disabled and ignored.
+ * Each PDF has the same name as the source file (report.docx -> report.pdf,
+ * budget.xlsx -> budget.pdf).
  *
  * Requires LibreOffice (the "soffice" binary) to be installed on the server.
  */
@@ -43,7 +44,18 @@ import java.util.zip.ZipOutputStream;
 @RequestMapping("/api")
 public class FilesToPdfController {
 
-    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("doc", "docx", "xls", "xlsx");
+    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("doc", "docx", "docm", "xls", "xlsx");
+
+    private static final String DISABLE_MACROS_CONFIG = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <item oor:path="/org.openoffice.Office.Common/Security/Scripting">
+                <prop oor:name="DisableMacrosExecution" oor:op="fuse">
+                  <value>true</value>
+                </prop>
+              </item>
+            </oor:items>
+            """;
 
     @Value("${pdftools.soffice-path:soffice}")
     private String sofficePath;
@@ -135,7 +147,7 @@ public class FilesToPdfController {
             String extension = FileNames.extension(name);
             if (!SUPPORTED_EXTENSIONS.contains(extension)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Unsupported file: " + name + " (supported: .doc, .docx, .xls, .xlsx)");
+                        "Unsupported file: " + name + " (supported: .doc, .docx, .docm, .xls, .xlsx)");
             }
 
             Path target = inputDir.resolve(uniqueNames.next(FileNames.baseName(name)) + "." + extension);
@@ -147,6 +159,11 @@ public class FilesToPdfController {
 
     private void runLibreOffice(List<Path> inputs, Path outputDir, Path profileDir)
             throws IOException, InterruptedException {
+        // Hard-disable all macro/VBA/script execution in the isolated per-request profile.
+        Path userConfigDir = Files.createDirectories(profileDir.resolve("user"));
+        Files.writeString(userConfigDir.resolve("registrymodifications.xcu"),
+                DISABLE_MACROS_CONFIG, StandardCharsets.UTF_8);
+
         List<String> command = new ArrayList<>(List.of(
                 sofficePath,
                 "--headless", "--norestore", "--nolockcheck", "--nodefault", "--nofirststartwizard",

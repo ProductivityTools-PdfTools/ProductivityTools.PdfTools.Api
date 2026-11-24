@@ -8,7 +8,7 @@ RUN ./gradlew clean build --no-daemon
 
 # Stage 2: Create the runtime image
 FROM eclipse-temurin:21-jre
-# LibreOffice (Writer and Calc, without GUI) is used to convert .doc/.docx and .xls/.xlsx files to PDF.
+# LibreOffice (Writer and Calc, without GUI) is used to convert .doc/.docx/.docm and .xls/.xlsx files to PDF.
 # Liberation and Carlito fonts are metric-compatible with Arial/Times New Roman/Courier New/Calibri used in Office files.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

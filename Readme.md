@@ -8,7 +8,7 @@ $env:JAVA_HOME="c:\Program Files\Java\jdk-24\"
 
 ## Jenkins
 
-Files to PDF (`/api/files-to-pdf`) converts .doc/.docx and .xls/.xlsx using LibreOffice, so it must be installed on the server
+Files to PDF (`/api/files-to-pdf`) converts .doc/.docx/.docm and .xls/.xlsx using LibreOffice, so it must be installed on the server
 (the Docker image installs it automatically):
 
 ```bash
