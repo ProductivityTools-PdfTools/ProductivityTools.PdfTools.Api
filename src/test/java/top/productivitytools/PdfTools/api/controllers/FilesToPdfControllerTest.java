@@ -83,14 +83,27 @@ class FilesToPdfControllerTest {
                         .file(upload("umowa.docx"))
                         .file(upload("umowa.docm"))
                         .file(upload("budzet.xls"))
-                        .file(upload("budzet.xlsx")))
+                        .file(upload("budzet.xlsx"))
+                        .file(upload("prezentacja.pptx")))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("converted.zip")))
                 .andReturn();
 
         // Files sharing the same base name across extensions get a unique suffix.
         assertThat(zipEntries(result.getResponse().getContentAsByteArray()))
-                .containsExactly("Raport Q3.pdf", "umowa.pdf", "umowa (2).pdf", "umowa (3).pdf", "budzet.pdf", "budzet (2).pdf");
+                .containsExactly("Raport Q3.pdf", "umowa.pdf", "umowa (2).pdf", "umowa (3).pdf",
+                        "budzet.pdf", "budzet (2).pdf", "prezentacja.pdf");
+    }
+
+    @Test
+    void returnsPlainPdfForSinglePresentationFile() throws Exception {
+        MvcResult result = mockMvc.perform(multipart("/api/files-to-pdf").file(upload("Oferta Q4.pptx")))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string("Content-Disposition", containsString("Q4.pdf")))
+                .andReturn();
+
+        assertThat(result.getResponse().getContentAsByteArray()).startsWith("%PDF".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test

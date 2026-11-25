@@ -8,14 +8,16 @@ RUN ./gradlew clean build --no-daemon
 
 # Stage 2: Create the runtime image
 FROM eclipse-temurin:21-jre
-# LibreOffice (Writer and Calc, without GUI) is used to convert .doc/.docx/.docm and .xls/.xlsx files to PDF.
-# Liberation and Carlito fonts are metric-compatible with Arial/Times New Roman/Courier New/Calibri used in Office files.
+# LibreOffice (Writer, Calc and Impress, without GUI) is used to convert .doc/.docx/.docm, .xls/.xlsx and .pptx files to PDF.
+# Liberation, Carlito and Caladea fonts are metric-compatible with Arial/Times New Roman/Courier New/Calibri/Cambria used in Office files.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libreoffice-writer-nogui \
         libreoffice-calc-nogui \
+        libreoffice-impress-nogui \
         fonts-liberation \
         fonts-crosextra-carlito \
+        fonts-crosextra-caladea \
         fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app

@@ -31,11 +31,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Converts Word (.doc, .docx, .docm) and Excel (.xls, .xlsx) files to PDF using
- * LibreOffice in headless mode and returns all PDFs in a single ZIP file
- * (or just the PDF when a single file is sent). Macros are disabled and ignored.
- * Each PDF has the same name as the source file (report.docx -> report.pdf,
- * budget.xlsx -> budget.pdf).
+ * Converts Word (.doc, .docx, .docm), Excel (.xls, .xlsx) and PowerPoint (.pptx)
+ * files to PDF using LibreOffice in headless mode and returns all PDFs in a
+ * single ZIP file (or just the PDF when a single file is sent). Macros are
+ * disabled and ignored. Each PDF has the same name as the source file
+ * (report.docx -> report.pdf, slides.pptx -> slides.pdf).
  *
  * Requires LibreOffice (the "soffice" binary) to be installed on the server.
  */
@@ -44,7 +44,7 @@ import java.util.zip.ZipOutputStream;
 @RequestMapping("/api")
 public class FilesToPdfController {
 
-    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("doc", "docx", "docm", "xls", "xlsx");
+    private static final Set<String> SUPPORTED_EXTENSIONS = Set.of("doc", "docx", "docm", "xls", "xlsx", "pptx");
 
     private static final String DISABLE_MACROS_CONFIG = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -147,7 +147,7 @@ public class FilesToPdfController {
             String extension = FileNames.extension(name);
             if (!SUPPORTED_EXTENSIONS.contains(extension)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Unsupported file: " + name + " (supported: .doc, .docx, .docm, .xls, .xlsx)");
+                        "Unsupported file: " + name + " (supported: .doc, .docx, .docm, .xls, .xlsx, .pptx)");
             }
 
             Path target = inputDir.resolve(uniqueNames.next(FileNames.baseName(name)) + "." + extension);
